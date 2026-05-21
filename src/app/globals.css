@@ -1,0 +1,110 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap");
+@import url("https://fonts.cdnfonts.com/css/miama");
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #e6533c;
+  --color-accent-hover: #d4432d;
+  --color-dark-bg: #000000;
+  --color-card-bg: #222222;
+  --color-input-bg: #373737;
+  --color-secondary-text: #afaba5;
+  --color-footer-text: #8c8c8c;
+  --color-border-subtle: rgba(255, 255, 255, 0.1);
+
+  --font-inter: "Inter", sans-serif;
+  --font-miama: "Miama", sans-serif;
+
+  --animate-fade-in: fade-in 0.8s ease-out forwards;
+  --animate-slide-up: slide-up 0.8s ease-out forwards;
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(230, 83, 60, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(230, 83, 60, 0.6);
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-inter);
+  background-color: var(--color-dark-bg);
+  color: white;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e6533c;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d4432d;
+}
+
+/* Glass effect utility */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #e6533c, #ff8a65);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
