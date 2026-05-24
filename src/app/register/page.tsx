@@ -108,6 +108,7 @@ export default function RegisterWizard() {
       const response = await apiClient.post("/members", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
+      console.log("from register",response)
 
       if (response.data?.success) {
         toast.success("Profile registration submitted successfully!");

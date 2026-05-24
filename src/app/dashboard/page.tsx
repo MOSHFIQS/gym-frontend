@@ -7,7 +7,7 @@ import { apiClient } from "@/lib/api";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navbar from "@/components/Navbar";
 import toast from "react-hot-toast";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -21,7 +21,14 @@ import {
   CheckCircle,
   Clock,
   Ban,
+  Copy,
 } from "lucide-react";
+
+interface GatewayDetails {
+  bkash: { merchantNumber: string };
+  nagad: { merchantNumber: string };
+  bankTransfer: { bankName: string; accountNumber: string; routingNumber: string };
+}
 
 interface Payment {
   id: string;
@@ -58,6 +65,7 @@ export default function MemberDashboard() {
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [gateway, setGateway] = useState<GatewayDetails | null>(null);
 
   const fetchPayments = async () => {
     try {
@@ -78,6 +86,17 @@ export default function MemberDashboard() {
     }
   }, [user]);
 
+  // Fetch gateway details when modal opens
+  useEffect(() => {
+    if (isModalOpen && !gateway) {
+      apiClient.get("/payments/details").then((res) => {
+        if (res.data?.success && res.data?.data) {
+          setGateway(res.data.data);
+        }
+      }).catch(() => {});
+    }
+  }, [isModalOpen, gateway]);
+
   const memberProfile = user?.member;
   const currentPlan = memberProfile?.membershipPlan || "MONTHLY";
   const requiredAmount = PLAN_PRICES[currentPlan] || 50;
@@ -87,16 +106,20 @@ export default function MemberDashboard() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<PaymentModalValues>({
     resolver: zodResolver(paymentModalSchema),
-    values: {
+    defaultValues: {
       amount: requiredAmount,
       method: "BKASH",
       memberId: memberProfile?.id || "",
       transactionId: "",
     },
   });
+
+  // Watch selected method to show correct account info
+  const selectedModalMethod = useWatch({ control, name: "method" });
 
   const onPaymentSubmit = async (values: PaymentModalValues) => {
     setIsSubmittingPayment(true);
@@ -343,9 +366,9 @@ export default function MemberDashboard() {
               <DollarSign className="w-5 h-5 text-accent" /> Log New Payment
             </h3>
 
-            <p className="text-xs text-secondary-text mb-5 leading-relaxed">
-              Verify you have manually transferred the subscription amount for the plan:{" "}
-              <b className="text-accent font-semibold">{currentPlan} (${requiredAmount})</b>.
+            <p className="text-xs text-secondary-text mb-4 leading-relaxed">
+              Send the required amount manually via your mobile banking app, then enter
+              the transaction details below.
             </p>
 
             <form onSubmit={handleSubmit(onPaymentSubmit)} className="space-y-4">
@@ -362,12 +385,62 @@ export default function MemberDashboard() {
                 </select>
               </div>
 
+              {/* Gateway account info — shown based on selected method */}
+              {gateway && (
+                <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 text-xs space-y-2">
+                  <p className="text-secondary-text font-semibold uppercase tracking-wide text-[10px]">Send To:</p>
+                  {selectedModalMethod === "BANK_TRANSFER" ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-secondary-text">Bank Name</span>
+                        <span className="font-semibold text-white">{gateway.bankTransfer.bankName}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-secondary-text">Account No</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-white">{gateway.bankTransfer.accountNumber}</span>
+                          <button type="button" onClick={() => { navigator.clipboard.writeText(gateway.bankTransfer.accountNumber); toast.success("Copied!"); }} className="text-white/40 hover:text-accent cursor-pointer"><Copy className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-secondary-text">Routing No</span>
+                        <span className="font-mono text-white/80">{gateway.bankTransfer.routingNumber}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <span className="text-secondary-text">Merchant Number</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-white text-sm">
+                          {selectedModalMethod === "BKASH" ? gateway.bkash.merchantNumber : gateway.nagad.merchantNumber}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const num = selectedModalMethod === "BKASH" ? gateway.bkash.merchantNumber : gateway.nagad.merchantNumber;
+                            navigator.clipboard.writeText(num);
+                            toast.success("Number copied!");
+                          }}
+                          className="text-white/40 hover:text-accent cursor-pointer"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-1 border-t border-white/5 mt-1">
+                    <span className="text-secondary-text">Required Amount</span>
+                    <span className="font-black text-accent">${requiredAmount}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Transaction ID Input */}
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-white/80">Transaction ID (TxnID)</label>
                 <input
                   type="text"
-                  placeholder="TRX485938495"
+                  placeholder="e.g. TRX485938495"
                   className="w-full bg-white/5 border border-white/10 focus:border-accent rounded-xl py-3 px-4 text-white text-sm outline-none transition-all"
                   {...register("transactionId")}
                 />
@@ -376,15 +449,22 @@ export default function MemberDashboard() {
                 )}
               </div>
 
-              {/* Amount - Pre-filled & Read-only */}
+              {/* Amount — Editable, user enters what they actually sent */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-white/80">Amount (USD)</label>
+                <label className="text-xs font-semibold text-white/80">
+                  Amount Paid (USD)
+                  <span className="text-white/40 font-normal ml-1">(enter what you sent)</span>
+                </label>
                 <input
                   type="number"
-                  disabled
-                  className="w-full bg-white/5 border border-white/10 opacity-60 rounded-xl py-3 px-4 text-white text-sm outline-none cursor-not-allowed"
-                  value={requiredAmount}
+                  step="0.01"
+                  placeholder={String(requiredAmount)}
+                  className="w-full bg-white/5 border border-white/10 focus:border-accent rounded-xl py-3 px-4 text-white text-sm outline-none transition-all"
+                  {...register("amount", { valueAsNumber: true })}
                 />
+                {errors.amount && (
+                  <p className="text-xs text-accent mt-1">{errors.amount.message}</p>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-white/10 mt-6">

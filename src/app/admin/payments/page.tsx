@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ClipboardList,
 } from "lucide-react";
+import Image from "next/image";
 
 interface Payment {
   id: string;
@@ -33,6 +34,7 @@ interface Payment {
     fullName: string;
     email: string;
     membershipPlan: string;
+    profileImage: string;
   } | null;
 }
 
@@ -52,6 +54,7 @@ type VerifyFormValues = z.infer<typeof verifySchema>;
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState<Payment[]>([]);
+  console.log(payments);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -244,10 +247,23 @@ export default function AdminPayments() {
                       </td>
                       <td className="py-4 px-4">
                         {pmt.member ? (
-                          <>
-                            <div className="font-semibold text-white">{pmt.member.fullName}</div>
+                          <div className="flex items-center gap-3">
+                          {pmt.member.profileImage && (
+                            <div className="w-8 h-8 rounded-full overflow-hidden mr-3">
+                              <Image
+                                src={pmt.member.profileImage}
+                                alt={pmt.member.fullName}
+                                width={32}
+                                height={32}
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                            <div>
+                              <div className="font-semibold text-white">{pmt.member.fullName}</div>
                             <div className="text-xs text-secondary-text">{pmt.member.email}</div>
-                          </>
+                            </div>
+                          </div>
                         ) : (
                           <span className="text-xs text-white/40">Unknown member profile</span>
                         )}
