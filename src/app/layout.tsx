@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Fitness — Get Body in Shape & Stay Healthy",
@@ -31,7 +33,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <AuthProvider>
+          {children}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: "#222222",
+                color: "#ffffff",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+              },
+            }}
+          />
+        </AuthProvider>
+      </body>
     </html>
   );
 }
